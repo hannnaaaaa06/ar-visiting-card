@@ -1,0 +1,316 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>AR Graphic Designer Visiting Card</title>
+
+    <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/studio-backend/master/src/modules/marker/tools/gesture-detector.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/studio-backend/master/src/modules/marker/tools/gesture-handler.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /* Extra interactive layer added after the AR.js Studio export */
+        #ui {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        #scanHint {
+            position: absolute;
+            left: 50%;
+            bottom: 28px;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,.78);
+            color: #fff;
+            padding: 11px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            white-space: nowrap;
+            transition: opacity .25s ease;
+        }
+
+        #exploreButton {
+            position: absolute;
+            left: 50%;
+            bottom: 28px;
+            transform: translateX(-50%);
+            border: 0;
+            border-radius: 999px;
+            padding: 14px 24px;
+            background: #111;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: .08em;
+            font-size: 13px;
+            box-shadow: 0 8px 25px rgba(0,0,0,.3);
+            pointer-events: auto;
+            cursor: pointer;
+            display: none;
+        }
+
+        #panel {
+            position: absolute;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%) translateY(20px);
+            width: min(92vw, 430px);
+            max-height: 76vh;
+            overflow: auto;
+            background: rgba(255,255,255,.97);
+            color: #111;
+            border-radius: 22px;
+            padding: 22px;
+            box-shadow: 0 18px 50px rgba(0,0,0,.35);
+            pointer-events: auto;
+            opacity: 0;
+            display: none;
+            transition: opacity .25s ease, transform .25s ease;
+        }
+
+        #panel.open {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .panelTop {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .panelTop h2 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        #closeButton {
+            width: 34px;
+            height: 34px;
+            border: 0;
+            border-radius: 50%;
+            background: #eee;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        #intro {
+            margin: 0 0 18px;
+            line-height: 1.5;
+            color: #444;
+            font-size: 14px;
+        }
+
+        .menu {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .menu button {
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 13px;
+            padding: 13px 10px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .menu button.active {
+            background: #111;
+            color: #fff;
+            border-color: #111;
+        }
+
+        .content {
+            display: none;
+            animation: fadeIn .2s ease;
+        }
+
+        .content.active { display: block; }
+
+        .content h3 {
+            margin: 8px 0;
+            font-size: 17px;
+        }
+
+        .content p, .content li {
+            color: #444;
+            line-height: 1.55;
+            font-size: 14px;
+        }
+
+        .project {
+            padding: 13px 0;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .project strong { display: block; margin-bottom: 4px; }
+
+        .step {
+            display: flex;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .number {
+            flex: 0 0 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #111;
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+    <a-scene
+        vr-mode-ui="enabled: false;"
+        loading-screen="enabled: false;"
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+        id="scene"
+        embedded
+        gesture-detector
+    >
+        <a-marker
+            id="markerA"
+            type="pattern"
+            preset="custom"
+            url="assets/marker.patt"
+            raycaster="objects: .clickable"
+            emitevents="true"
+            cursor="fuse: false; rayOrigin: mouse;"
+        >
+            <!-- Original AR.js Studio content -->
+            <a-image
+                src="assets/asset.jpeg"
+                scale="1 1 1"
+                class="clickable"
+                rotation="-90 0 0"
+                gesture-handler
+            ></a-image>
+        </a-marker>
+
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <!-- CUSTOM INTERACTIVE LAYER: added to the AR.js Studio export -->
+    <div id="ui">
+        <div id="scanHint">Point your camera at the visiting card</div>
+
+        <button id="exploreButton">EXPLORE THE DESIGNER</button>
+
+        <section id="panel" aria-label="Designer information">
+            <div class="panelTop">
+                <h2>Beyond the card.</h2>
+                <button id="closeButton" aria-label="Close">×</button>
+            </div>
+
+            <p id="intro">A visiting card gives you a name. This AR layer gives you a glimpse into how the designer thinks, works and creates.</p>
+
+            <div class="menu">
+                <button class="tab active" data-tab="about">ABOUT</button>
+                <button class="tab" data-tab="work">WORK</button>
+                <button class="tab" data-tab="process">PROCESS</button>
+                <button class="tab" data-tab="contact">CONTACT</button>
+            </div>
+
+            <div id="about" class="content active">
+                <h3>Graphic Designer</h3>
+                <p>I turn ideas into visual systems through typography, identity, layout and image-making. The goal is not simply to make something look good, but to make the message easier to understand and remember.</p>
+            </div>
+
+            <div id="work" class="content">
+                <h3>Selected work</h3>
+                <div class="project"><strong>01 — Brand Identity</strong><span>Visual identity, typography and applications for a new lifestyle brand.</span></div>
+                <div class="project"><strong>02 — Editorial System</strong><span>A flexible publication language built from grid, type and image.</span></div>
+                <div class="project"><strong>03 — Campaign Graphics</strong><span>Social and print visuals designed as one connected campaign.</span></div>
+            </div>
+
+            <div id="process" class="content">
+                <h3>How I design</h3>
+                <div class="step"><div class="number">1</div><div><strong>Understand</strong><br><span>Find the problem, audience and context.</span></div></div>
+                <div class="step"><div class="number">2</div><div><strong>Explore</strong><br><span>Research references, visual directions and possibilities.</span></div></div>
+                <div class="step"><div class="number">3</div><div><strong>Build</strong><br><span>Develop typography, composition, colour and visual systems.</span></div></div>
+                <div class="step"><div class="number">4</div><div><strong>Refine</strong><br><span>Test, edit and make the final communication sharper.</span></div></div>
+            </div>
+
+            <div id="contact" class="content">
+                <h3>Let's make something.</h3>
+                <p><strong>YOUR NAME</strong><br>Graphic Designer</p>
+                <p>Email: hello@yourname.design<br>Instagram: @yourname<br>Portfolio: yourname.design</p>
+                <p><em>Replace these placeholders with your actual details before submission.</em></p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const marker = document.querySelector('#markerA');
+        const hint = document.querySelector('#scanHint');
+        const explore = document.querySelector('#exploreButton');
+        const panel = document.querySelector('#panel');
+        const close = document.querySelector('#closeButton');
+        const tabs = document.querySelectorAll('.tab');
+        const contents = document.querySelectorAll('.content');
+
+        marker.addEventListener('markerFound', () => {
+            hint.style.display = 'none';
+            explore.style.display = 'block';
+        });
+
+        marker.addEventListener('markerLost', () => {
+            explore.style.display = 'none';
+            panel.classList.remove('open');
+            setTimeout(() => {
+                if (!panel.classList.contains('open')) panel.style.display = 'none';
+            }, 250);
+            hint.style.display = 'block';
+        });
+
+        explore.addEventListener('click', () => {
+            panel.style.display = 'block';
+            requestAnimationFrame(() => panel.classList.add('open'));
+            explore.style.display = 'none';
+        });
+
+        close.addEventListener('click', () => {
+            panel.classList.remove('open');
+            setTimeout(() => panel.style.display = 'none', 250);
+            explore.style.display = 'block';
+        });
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
